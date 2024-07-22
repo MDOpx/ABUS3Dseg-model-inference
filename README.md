@@ -34,7 +34,7 @@ export nnUNet_num_proc=64`
 ### 3. Inference
 Run inference code with additional options for SA2+TMA+MTL model.
 Results will be saved in `results` Folder
-`python nnunet/inference/predict.py -i imagesTs -o results \
+`python hybridnet/inference/predict.py -i imagesTs -o results \
 -m nnUNet_trained_models/nnUNet/3d_fullres/Task500_SA2_TMA_MTL/nnUNetTrainerV2_IBA__nnUNetPlansv2.1 -f 0 \
 --model_arch MultitaskAGIBA_NI --encoder_module NIConv3dBlock \
 --attention_module AGUpConvTwinCBAM3D_wSA_small_v3 --cbammode CS --apply_skips '4' \
