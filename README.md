@@ -4,7 +4,6 @@
 ### Data preparation
 All the inference data should be positioned in `imagesTs` folder
 The TDSC dataset is available on the [TDSC Challenge website](https://tdsc-abus2023.grand-challenge.org/)  
-*Sample data can be downloaded from [link](https://1drv.ms/u/c/de011cb09ae2716d/Efbz_-gXZdRKgFC4mvCvxmkB14bSI4heirjoBADeIurMPw?e=lVqlWW)
 ### Model preparation
 Trained model should be positioned in `nnUNet_trained_models/nnUNet/3d_fullres/Task500_SA2_TMA_MTL/nnUNetTrainerV2_IBA__nnUNetPlansv2.1` folder
 ## Tutorial
