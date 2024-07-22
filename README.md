@@ -16,8 +16,12 @@ loopbackkr/pytorch:1.11.0-cuda11.3-cudnn8`
 `docker attach prj`
 
 ### 1. Package installation
-Install required python packages (NVIDA A100 with 80 GB)
-`pip install -r requirements.txt`
+Install required python packages)
+`pip install -r requirements.txt`  
+Implementation details  
+- Python, version 3.8.12
+- Pytorch, version 1.11.0.
+- NVIDA A100 with 80 GB
 
 ### 2. Environment Setting
 Run following lines for inference environemnt setting
