@@ -18,7 +18,7 @@ loopbackkr/pytorch:1.11.0-cuda11.3-cudnn8`
 ### 1. Package installation
 Install required python packages)
 `pip install -r requirements.txt`  
-Implementation details  
+*Implementation details  
 - Python, version 3.8.12
 - Pytorch, version 1.11.0.
 - NVIDA A100 with 80 GB
