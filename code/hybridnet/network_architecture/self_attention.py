@@ -11,7 +11,7 @@ class depthwise_separable_conv(nn.Module):
         self.pointwise = nn.Conv3d(in_ch, out_ch, kernel_size=1, bias=bias)
 
     def forward(self, x): 
-        out = self.depthwise(x)
+        #out = self.depthwise(x)
         out = self.pointwise(out)
 
         return out 
@@ -25,7 +25,7 @@ class depthwise_separable_conv_2d(nn.Module):
         self.pointwise = nn.Conv2d(in_ch, out_ch, kernel_size=1, bias=bias)
 
     def forward(self, x): 
-        out = self.depthwise(x)
+        #out = self.depthwise(x)
         out = self.pointwise(out)
 
         return out 
