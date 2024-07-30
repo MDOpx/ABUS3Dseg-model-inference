@@ -12,7 +12,7 @@ class depthwise_separable_conv(nn.Module):
 
     def forward(self, x): 
         #out = self.depthwise(x)
-        out = self.pointwise(out)
+        out = self.pointwise(x)
 
         return out 
 
@@ -26,7 +26,7 @@ class depthwise_separable_conv_2d(nn.Module):
 
     def forward(self, x): 
         #out = self.depthwise(x)
-        out = self.pointwise(out)
+        out = self.pointwise(x)
 
         return out 
 
