@@ -112,16 +112,9 @@ class ManualAttention(nn.Module):
 
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj_drop = nn.Dropout(proj_drop)
-
-        #if self.rel_pos:
-        #    self.relative_position_encoding = RelativePositionBias(heads, reduce_size, reduce_size, reduce_size)
     def forward(self, q, k, v):
 
         B, C, D, H, W = q.shape
-
-        #B, inner_dim, H, W
-        #qkv = self.to_qkv(x)
-        #q, k, v = qkv.chunk(3, dim=1)
 
         if self.projection == 'interp' and H != self.reduce_size:
             k, v = map(lambda t: F.interpolate(t, size=self.reduce_size, mode='trilinear', align_corners=True), (k, v))
@@ -133,13 +126,6 @@ class ManualAttention(nn.Module):
         k, v = map(lambda t: rearrange(t, 'b (dim_head heads) d h w -> b heads (d h w) dim_head', dim_head=self.dim_head, heads=self.heads, d=self.reduce_size, h=self.reduce_size, w=self.reduce_size), (k, v))
 
         q_k_attn = torch.einsum('bhid,bhjd->bhij', q, k)
-        
-        #if self.rel_pos:
-        #    relative_position_bias = self.relative_position_encoding(H, W)
-        #    import pdb
-        #    pdb.set_trace()
-        #    q_k_attn += relative_position_bias
-
         q_k_attn *= self.scale
         q_k_attn = F.softmax(q_k_attn, dim=-1)
         q_k_attn = self.attn_drop(q_k_attn)
