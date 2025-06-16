@@ -20,6 +20,7 @@ import numpy as np
 import torch
 from hybridnet.training.data_augmentation.data_augmentation_moreDA import get_moreDA_augmentation
 from hybridnet.training.loss_functions.deep_supervision import MultipleOutputLoss2
+from nnunet.training.loss_functions.mtl_consistency import MTLConsistencyLoss
 from hybridnet.utilities.to_torch import maybe_to_torch, to_cuda
 from hybridnet.network_architecture.generic_UNet import Generic_UNet
 from hybridnet.network_architecture.initialization import InitWeights_He
@@ -115,6 +116,7 @@ class nnUNetTrainerV2_IBA(nnUNetTrainerV2):
             elif self.model_arch == MultitaskAGIBA_NI:
                 self.seg_loss = MultipleOutputLoss2(self.loss, self.ds_loss_weights)
                 self.cls_loss = nn.BCEWithLogitsLoss()
+                self.mtl_cons_loss = MTLConsistencyLoss()
             else:
                 raise KeyError
             ################# END ###################
