@@ -15,6 +15,7 @@ import torch.nn.functional as F
 import pdb
 from einops import rearrange
 import math
+from mamba_ssm import Mamba
 
 
 class Conv3dBlock(nn.Module):
@@ -561,6 +562,71 @@ class ResConv3dBlockRev3(nn.Module):
         x = self.act1(x)
         return x
 
+    
+class UltralightMamba(nn.Module):
+    def __init__(self, input_dim, output_dim, d_state = 16, d_conv = 4, expand = 2):
+        super().__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.norm = nn.LayerNorm(input_dim)
+        self.mamba = Mamba(
+                d_model=input_dim//4, # Model dimension d_model
+                d_state=d_state,  # SSM state expansion factor
+                d_conv=d_conv,    # Local convolution width
+                expand=expand,    # Block expansion factor
+        )
+        self.proj = nn.Linear(input_dim, output_dim)
+        self.skip_scale= nn.Parameter(torch.ones(1))
+    
+    def forward(self, x):
+        if x.dtype == torch.float16:
+            x = x.type(torch.float32)
+        B, H, D, C = x.shape  
+        #B, C = x.shape[:2]
+
+        assert C == self.input_dim
+        # n_tokens = x.shape[2:].numel()
+        # img_dims = x.shape[2:]
+        # x_flat = x.reshape(B, C, n_tokens).transpose(-1, -2)
+        # x_norm = self.norm(x_flat)
+        x_norm = self.norm(x)   #이미 C가 마지막이므로 제대로 작동
+
+        # x1, x2, x3, x4 = torch.chunk(x_norm, 4, dim=2)
+        x1, x2, x3, x4 = torch.chunk(x_norm, 4, dim=3)  #H, H, D, C/4
+        # print(x_norm.shape) #torch.Size([2, 2, 600, 32])
+        # print(x1.shape) #torch.Size([2, 2, 600, 8])
+        
+        '''
+        print(f'x1_Before: {x1.shape}')
+        x1 = x1.view(B*H, D, C//4)
+        print(f'x1_Before: {x1.shape}')
+        x1_Aft = self.mamba(x1)
+        print(f'x1_After: {x1_Aft.shape}')
+        # Reshape the output back to (2, 2, 600, 8)
+        x1_Aft = x1_Aft.view(B, H, D, C//4)
+        print(f'x1_After: {x1_Aft.shape}')
+        '''
+
+        x1 = x1.view(B*H, D, C//4)
+        x2 = x2.view(B*H, D, C//4)
+        x3 = x3.view(B*H, D, C//4)
+        x4 = x4.view(B*H, D, C//4)
+        x_mamba1 = self.mamba(x1) + self.skip_scale * x1
+        x_mamba2 = self.mamba(x2) + self.skip_scale * x2
+        x_mamba3 = self.mamba(x3) + self.skip_scale * x3
+        x_mamba4 = self.mamba(x4) + self.skip_scale * x4
+        x_mamba1 = x_mamba1.view(B, H, D, C//4)
+        x_mamba2 = x_mamba2.view(B, H, D, C//4)
+        x_mamba3 = x_mamba3.view(B, H, D, C//4)
+        x_mamba4 = x_mamba4.view(B, H, D, C//4)
+
+        x_mamba = torch.cat([x_mamba1, x_mamba2,x_mamba3,x_mamba4], dim=3)
+
+        x_mamba = self.norm(x_mamba)
+        out = self.proj(x_mamba)
+        # out = x_mamba.transpose(-1, -2).reshape(B, self.output_dim, *img_dims)
+        return out
+
 class LinearAttention3D(nn.Module):
     def __init__(self, dim, heads=4, dim_head=64, attn_drop=0., proj_drop=0., reduce_size=16, projection=0, sub_sample_flag=True, rel_pos=True):
         super().__init__()
@@ -580,6 +646,9 @@ class LinearAttention3D(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop)
         self.sub_sample_flag = sub_sample_flag
 
+        self.mamba_q = UltralightMamba(dim_head, dim_head)
+        self.mamba_k = UltralightMamba(dim_head, dim_head)
+        self.mamba_v = UltralightMamba(dim_head, dim_head)
         # if self.rel_pos:
         #     self.relative_position_encoding = RelativePositionEmbedding3D(dim_head, reduce_size)
 
@@ -605,6 +674,10 @@ class LinearAttention3D(nn.Module):
         q = rearrange(q, 'b (dim_head heads) d h w -> b heads (d h w) dim_head', dim_head=self.dim_head, heads=self.heads, d=D, h=H, w=W)
         k, v = map(lambda t: rearrange(t, 'b (dim_head heads) d h w -> b heads (d h w) dim_head', dim_head=self.dim_head, heads=self.heads, d=math.ceil(D/reduce_size), h=math.ceil(H/reduce_size), w=math.ceil(W/reduce_size)), (k, v))#d=x.shape[-1], h=x.shape[-1], w=x.shape[-1]), (k, v))
 
+        q = self.mamba_q(q)
+        k = self.mamba_k(k)
+        v = self.mamba_v(v)
+        
         q_k_attn = torch.einsum('bhid,bhjd->bhij', q, k)
 
         q_k_attn *= self.scale
@@ -618,7 +691,7 @@ class LinearAttention3D(nn.Module):
         out = self.proj_drop(out)
 
         return out, q_k_attn  
-    
+        
 class NIConv3dBlock(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, kernel_size: tuple=(3, 3, 3), stride0: tuple=(1, 1, 1), stride1: tuple=(1, 1, 1), padding: tuple=(0, 0, 0), bias: bool=True, 
                 depth: int=0, num_heads: int=3, reduce_size: int=5, projection: list=None, ) -> None:
