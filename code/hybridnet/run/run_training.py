@@ -106,6 +106,8 @@ def main():
     parser.add_argument("--loss_ratio_seg", default=0.7, type=float)
     parser.add_argument("--loss_ratio_cls", default=0.3, type=float)
     parser.add_argument("--loss_ratio_det", default=0.0, type=float)
+    parser.add_argument("--loss_ratio_mtl_cons", default=0.0, type=float)
+    parser.add_argument("--mtl_cons_start_epoch", default=1200, type=int)
     parser.add_argument("--encoder_module", default=None, type=str)
     parser.add_argument("--decoder_module", default=None, type=str)
     parser.add_argument("--fixed_validation_set", type=str, required=False, default=None)
