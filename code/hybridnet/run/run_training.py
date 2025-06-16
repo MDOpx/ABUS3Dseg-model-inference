@@ -225,6 +225,8 @@ def main():
                             loss_ratio_seg=args.loss_ratio_seg,
                             loss_ratio_cls=args.loss_ratio_cls,
                             loss_ratio_det=args.loss_ratio_det,
+                            loss_ratio_mtl_cons=args.loss_ratio_mtl_cons,
+                            mtl_cons_start_epoch=args.mtl_cons_start_epoch,
                             max_num_epochs=args.max_num_epochs,
                             fixed_validation_set=args.fixed_validation_set,
                             encoder_module=eval(args.encoder_module) if args.encoder_module else Conv3dBlock,
