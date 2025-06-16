@@ -11,7 +11,7 @@ Trained model should be positioned in `nnUNet_trained_models/nnUNet/3d_fullres/T
 Set Docker envoronment for inference
 `docker run -dit --name prj --gpus all --shm-size 256g --privileged \
 -v /code:/workspace \
-loopbackkr/pytorch:1.11.0-cuda11.3-cudnn8`
+pytorch/pytorch:2.4.0-cuda12.1-cudnn9-devel`
 
 `docker attach prj`
 
@@ -38,5 +38,5 @@ Results will be saved in `results` Folder
 -m nnUNet_trained_models/nnUNet/3d_fullres/Task500_SA2_TMA_MTL/nnUNetTrainerV2_IBA__nnUNetPlansv2.1 -f 0 \
 --model_arch MultitaskAGIBA_NI --encoder_module NIConv3dBlock \
 --attention_module AGUpConvTwinCBAM3D_wSA_small_v3 --cbammode CS --apply_skips '4' \
---depth [0,1,1,1,1,1] --num_heads [2,2,2,2,2,2] --projection [[1],[1],[1],[1],[1],[1]]`
+--depth [0,1,1,1,1,1] --num_heads [2,2,2,2,2,2] --projection [[1],[1],[1],[1],[1],[1]] --loss_ratio_mtl_cons 1`
  
