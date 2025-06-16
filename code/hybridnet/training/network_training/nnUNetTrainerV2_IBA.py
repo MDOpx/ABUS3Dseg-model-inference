@@ -47,7 +47,7 @@ class nnUNetTrainerV2_IBA(nnUNetTrainerV2):
     def __init__(self, plans_file, fold, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
                  unpack_data=True, deterministic=True, fp16=False,
                  use_refinement=False, refinement_loop_count=1, refinement_lazy_start_epoch=0, refinement_mode=None, model_arch=None, loss_ratio_seg=0.7, loss_ratio_cls=0.3, loss_ratio_det=0.0,
-                 fixed_validation_set=None, max_num_epochs=1000, encoder_module=Conv3dBlock, decoder_module=Conv3dBlock, train_fp_in_seg=False,
+                 loss_ratio_mtl_cons=0.0,mtl_cons_start_epoch=0,fixed_validation_set=None, max_num_epochs=1000, encoder_module=Conv3dBlock, decoder_module=Conv3dBlock, train_fp_in_seg=False,
                  legacy_model=False, just_unpacking=False, manual_batch_size=None, swa=False, swa_lr=0.05, swa_start=5, cascade_gap=False, lr_update_off=False, optimizer_name="SGD", manual_device=None,
                  cls_classes=None, initial_lr=1e-2, attention_module=None, iba_estimate_loop=10000, cbammode='CS', apply_skips='0,1,2,3,4', start_iba_ep=0, 
                  depth = [2, 2, 2, 2, 2, 2], num_heads = [3, 3, 3, 3, 3, 3], kernel_size_na = 7, dilations = [[1,1], [1,1], [1,1], [1,1], [1,1]],
@@ -55,7 +55,7 @@ class nnUNetTrainerV2_IBA(nnUNetTrainerV2):
         super().__init__(plans_file, fold, output_folder=output_folder, dataset_directory=dataset_directory, batch_dice=batch_dice, stage=stage,
                  unpack_data=unpack_data, deterministic=deterministic, fp16=fp16,
                  use_refinement=use_refinement, refinement_loop_count=refinement_loop_count, refinement_lazy_start_epoch=refinement_lazy_start_epoch, refinement_mode=refinement_mode, model_arch=model_arch, loss_ratio_seg=loss_ratio_seg, loss_ratio_cls=loss_ratio_cls, loss_ratio_det=loss_ratio_det,
-                 fixed_validation_set=fixed_validation_set, max_num_epochs=max_num_epochs, encoder_module=encoder_module, decoder_module=decoder_module, train_fp_in_seg=train_fp_in_seg,
+                 loss_ratio_mtl_cons=loss_ratio_mtl_cons, mtl_cons_start_epoch=mtl_cons_start_epoch,fixed_validation_set=fixed_validation_set, max_num_epochs=max_num_epochs, encoder_module=encoder_module, decoder_module=decoder_module, train_fp_in_seg=train_fp_in_seg,
                  legacy_model=legacy_model, just_unpacking=just_unpacking, manual_batch_size=manual_batch_size, swa=swa, swa_lr=swa_lr, swa_start=swa_start, cascade_gap=cascade_gap, lr_update_off=lr_update_off, optimizer_name=optimizer_name, manual_device=manual_device,
                  cls_classes=cls_classes, initial_lr=initial_lr)
         self.attention_module = attention_module
@@ -239,9 +239,16 @@ class nnUNetTrainerV2_IBA(nnUNetTrainerV2):
                             cls_target_batch.append(cls_target)
                         cls_target_batch = to_cuda(torch.Tensor(cls_target_batch)) #[2] -> [2, 1] : prediction 이 [2, 1] 형태로 뱉음
 
-                    seg_loss = self.seg_loss(output, target)
-                    cls_loss = self.cls_loss(cls_output if isinstance(self.cls_loss, nn.CrossEntropyLoss) else F.softmax(cls_output, dim=1), cls_target_batch)
-                    loss = seg_loss * self.loss_ratio_seg + cls_loss * self.loss_ratio_cls
+                    seg_loss = self.seg_loss(output, target) * self.loss_ratio_seg
+                    if self.loss_ratio_cls > 0:
+                        cls_loss = self.cls_loss(cls_output if isinstance(self.cls_loss, nn.CrossEntropyLoss) else F.softmax(cls_output, dim=1), cls_target_batch) * self.loss_ratio_cls
+                    else:
+                        cls_loss = 0
+                    if self.mtl_cons_start_epoch <= self.epoch and self.loss_ratio_mtl_cons > 0:
+                        mtl_cons_loss = self.mtl_cons_loss(output[0], cls_output) * self.loss_ratio_mtl_cons
+                    else:
+                        mtl_cons_loss = 0
+                    loss = seg_loss + cls_loss + mtl_cons_loss
                     
                     if do_backprop:
                         self.amp_grad_scaler.scale(loss).backward()
