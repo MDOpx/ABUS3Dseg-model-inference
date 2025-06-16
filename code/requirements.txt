@@ -24,3 +24,5 @@ pytorch-ignite
 
 natsort
 medcam
+mamba_ssm
+opencv-python-headless
