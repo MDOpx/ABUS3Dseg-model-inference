@@ -45,7 +45,7 @@ class nnUNetTrainerV2(nnUNetTrainer):
     def __init__(self, plans_file, fold, output_folder=None, dataset_directory=None, batch_dice=True, stage=None,
                  unpack_data=True, deterministic=True, fp16=False,
                  use_refinement=False, refinement_loop_count=1, refinement_lazy_start_epoch=0, refinement_mode=None, model_arch=None, loss_ratio_seg=0.7, loss_ratio_cls=0.3, loss_ratio_det=0.0,
-                 fixed_validation_set=None, max_num_epochs=1000, encoder_module=Conv3dBlock, decoder_module=Conv3dBlock, train_fp_in_seg=False,
+                 loss_ratio_mtl_cons=0.0, mtl_cons_start_epoch=0, fixed_validation_set=None, max_num_epochs=1000, encoder_module=Conv3dBlock, decoder_module=Conv3dBlock, train_fp_in_seg=False,
                  legacy_model=False, just_unpacking=False, manual_batch_size=None, swa=False, swa_lr=0.05, swa_start=5, cascade_gap=False, lr_update_off=False, optimizer_name="SGD", manual_device=None,
                  cls_classes=None, initial_lr=1e-2, attention_module=None, iba_estimate_loop=None, cbammode=None, apply_skips='0,1,2,3,4', start_iba_ep=0):
         super().__init__(plans_file, fold, output_folder, dataset_directory, batch_dice, stage, unpack_data,
@@ -63,6 +63,8 @@ class nnUNetTrainerV2(nnUNetTrainer):
         self.loss_ratio_seg = loss_ratio_seg
         self.loss_ratio_cls = loss_ratio_cls
         self.loss_ratio_det = loss_ratio_det
+        self.loss_ratio_mtl_cons = loss_ratio_mtl_cons
+        self.mtl_cons_start_epoch = mtl_cons_start_epoch
         self.fixed_validation_set = fixed_validation_set
         self.encoder_module = encoder_module
         self.decoder_module = decoder_module
