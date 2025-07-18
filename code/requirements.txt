@@ -19,7 +19,7 @@ einops
 
 notebook
 tensorboard
-monai
+monai==1.4.0
 pytorch-ignite
 
 natsort
